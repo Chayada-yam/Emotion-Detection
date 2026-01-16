@@ -278,8 +278,8 @@ export default function Home() {
           bestArea = area;
           bestRect = r;
         }
-        ctx.strokeStyle = "lime";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#FF3B30";
+        ctx.lineWidth = 4;
         ctx.strokeRect(r.x, r.y, r.width, r.height);
       }
 
@@ -365,7 +365,8 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen p-6 space-y-4">
+    // เปลี่ยนพื้นหลังเป็นสีเทาเข้ม และข้อความสีขาว
+    <main className="min-h-screen p-6 space-y-4 bg-slate-900 text-white">
       <h1 className="text-2xl font-bold">Face Emotion (OpenCV + YOLO11-CLS)</h1>
 
       <div className="space-y-2">
@@ -376,8 +377,8 @@ export default function Home() {
       </div>
 
       <div className="flex gap-3">
-        <button
-          className="px-4 py-2 rounded bg-black text-white"
+        <button 
+          className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
           onClick={startCamera}
         >
           Start Camera
