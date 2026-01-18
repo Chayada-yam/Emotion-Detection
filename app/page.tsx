@@ -177,7 +177,7 @@ export default function Home() {
   // 3) Load ONNX model + classes
   async function loadModel() {
     const session = await ort.InferenceSession.create(
-      "/models/emotion_yolo11n_cls.onnx",
+      "/models/emotion_yolo.onnx",
       { executionProviders: ["wasm"] }
     );
     sessionRef.current = session;
