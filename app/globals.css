@@ -1,38 +1,25 @@
 :root {
-  /* --- LIGHT MODE --- */
-  /* พื้นหลัง: ม่วงอ่อนแบบ Clean (ลดความเหลือง/ขุ่นลง) */
-  --background: #faf5ff; 
-  
-  /* ตัวหนังสือ: ม่วงเข้มเกือบดำ (Soft Black) อ่านสบายตากว่าดำสนิท */
-  --foreground: #2e1065; 
-  
-  /* สีตกแต่งหลัก: ม่วงสดที่เข้มขึ้นเล็กน้อย เพื่อให้อ่านง่ายบนพื้นขาว (WCAG friendly) */
-  --primary: #9333ea; 
-  
-  /* สีรอง/เส้นขอบ: ม่วงจางๆ สำหรับทำ Border หรือ Card Background */
-  --muted: #e9d5ff;
+  /* พื้นหลัง: ม่วงอ่อนมากๆ เกือบขาว */
+  --background: #faf5ff;
+  /* ตัวหนังสือ: สีม่วงเข้มเกือบดำ (ให้อ่านง่ายกว่าดำสนิท) */
+  --foreground: #3b0764;
+  /* สีตกแต่งหลัก: ม่วงพาสเทล */
+  --primary: #c084fc;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-muted: var(--muted); /* เพิ่มตัวนี้เข้ามา */
+  --color-primary: var(--primary); /* อย่าลืมบรรทัดนี้นะครับ */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* --- DARK MODE --- */
-    /* พื้นหลัง: ม่วงดำลึก (Deep Void) ปรับให้มีความเป็นม่วงมากกว่ากรมท่า */
-    --background: #0f0720; 
-    
-    /* ตัวหนังสือ: ขาวอมม่วงควันบุหรี่ (ลดแสงจ้า) */
-    --foreground: #f3e8ff; 
-    
-    /* สีตกแต่งหลัก: ม่วงนีออนพาสเทล (Glow effect) */
-    --primary: #d8b4fe; 
-    
-    /* สีรอง/เส้นขอบ: ม่วงเข้มปานกลาง สำหรับแบ่งเลเยอร์ */
-    --muted: #2e1065;
+    /* พื้นหลัง: ม่วงเข้มลึก (Deep Void) */
+    --background: #1e1b4b;
+    /* ตัวหนังสือ: ขาวอมม่วง */
+    --foreground: #e9d5ff;
+    /* สีตกแต่งหลัก: ม่วงนีออนพาสเทล */
+    --primary: #d8b4fe;
   }
 }
