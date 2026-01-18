@@ -88,8 +88,9 @@ export default function Home() {
   const faceCascadeRef = useRef<any>(null);
   const sessionRef = useRef<ort.InferenceSession | null>(null);
   const classesRef = useRef<string[] | null>(null);
+  const animationIdRef = useRef<number | null>(null); // เพิ่มตัวนี้เพื่อใช้ยกเลิก loop
 
-  // --- LOGIC SECTION (ส่วนคำนวณ AI เหมือนเดิมเป๊ะ) ---
+  // --- LOGIC SECTION ---
 
   async function loadOpenCV() {
     if (typeof window === "undefined") return;
@@ -146,6 +147,7 @@ export default function Home() {
     classesRef.current = await clsRes.json();
   }
 
+  // ฟังก์ชันเริ่มกล้อง
   async function startCamera() {
     setStatus("กำลังขออนุญาตใช้กล้อง...");
     try {
@@ -158,10 +160,37 @@ export default function Home() {
       await videoRef.current.play();
       setStatus("กำลังทำงาน (Running)");
       setIsStreaming(true);
-      requestAnimationFrame(loop);
+      
+      // เริ่ม Loop
+      loop();
     } catch (err) {
       setStatus("ไม่สามารถเปิดกล้องได้");
       console.error(err);
+    }
+  }
+
+  // ฟังก์ชันหยุดกล้อง (เพิ่มใหม่)
+  function stopCamera() {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    
+    if (animationIdRef.current) {
+      cancelAnimationFrame(animationIdRef.current);
+    }
+
+    setIsStreaming(false);
+    setStatus("หยุดทำงานแล้ว (Stopped)");
+    setEmotion("-");
+    setConf(0);
+    
+    // เคลียร์ภาพค้างที่ Canvas
+    const canvas = canvasRef.current;
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
     }
   }
 
@@ -203,9 +232,9 @@ export default function Home() {
       const video = videoRef.current;
       const canvas = canvasRef.current;
 
-      if (!cv || !faceCascade || !session || !classes || !video || !canvas) {
-        requestAnimationFrame(loop);
-        return;
+      // ถ้าหยุด stream หรือ video หยุดเล่น ให้จบ loop
+      if (!cv || !faceCascade || !session || !classes || !video || !canvas || video.paused || video.ended) {
+         return; 
       }
 
       const ctx = canvas.getContext("2d")!;
@@ -234,8 +263,7 @@ export default function Home() {
           bestArea = area;
           bestRect = r;
         }
-        // วาดกรอบจางๆ สำหรับหน้าที่ไม่ได้โฟกัส (เปลี่ยนสีเส้นให้เข้ากับธีม)
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)"; 
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; 
         ctx.lineWidth = 2;
         ctx.strokeRect(r.x, r.y, r.width, r.height);
       }
@@ -266,22 +294,17 @@ export default function Home() {
         setEmotion(detectedEmotion);
         setConf(confidence);
 
-        // --- DRAW ON CANVAS (ส่วนวาดรูปบนกล้อง) ---
-        // 1. กรอบหน้าชัดๆ (สีขาว ตัดกับวิดีโอ)
         ctx.strokeStyle = "#ffffff"; 
         ctx.lineWidth = 4;
         ctx.strokeRect(bestRect.x, bestRect.y, bestRect.width, bestRect.height);
 
-        // 2. ป้ายชื่อ (Background แบบพาสเทลโปร่งแสง)
         ctx.fillStyle = "rgba(255, 255, 255, 0.85)"; 
         const text = `${detectedEmotion} ${(confidence * 100).toFixed(0)}%`;
         ctx.font = "bold 16px sans-serif";
         const textWidth = ctx.measureText(text).width;
         
-        // วาดพื้นหลังป้ายชื่อ
         ctx.fillRect(bestRect.x, bestRect.y - 35, textWidth + 24, 35);
 
-        // 3. ตัวหนังสือ (สีเข้ม เพื่อให้อ่านง่ายบนพื้นขาว)
         ctx.fillStyle = "#333333";
         ctx.fillText(text, bestRect.x + 12, bestRect.y - 12);
       }
@@ -290,13 +313,12 @@ export default function Home() {
       gray.delete();
       faces.delete();
 
-      requestAnimationFrame(loop);
+      animationIdRef.current = requestAnimationFrame(loop);
     } catch (e: any) {
       console.error(e);
     }
   }
 
-  // Init
   useEffect(() => {
     (async () => {
       try {
@@ -309,23 +331,25 @@ export default function Home() {
         setStatus(`Error: ${e?.message}`);
       }
     })();
+    // Cleanup เมื่อปิดหน้าเว็บ
+    return () => stopCamera();
   }, []);
 
-  // --- UI SECTION (ส่วนแสดงผล ปรับธีมพาสเทลตรงนี้) ---
+  // --- UI SECTION ---
   return (
-    // ใช้สีพื้นหลังและตัวหนังสือจาก theme ที่ตั้งไว้
     <main className="min-h-screen w-full bg-background text-foreground flex flex-col items-center justify-center p-4 md:p-8 font-sans transition-colors duration-300">
       
       {/* Header */}
       <div className="w-full max-w-5xl mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
          <div className="text-center md:text-left">
-            <h1 className="text-3xl md:text-5xl font-bold text-primary mb-2">
+            <h1 className="text-4xl md:text-6xl font-black mb-2 bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm">
               Face Emotion AI
             </h1>
-            <p className="text-foreground/60">ตรวจจับอารมณ์ด้วย AI สไตล์พาสเทล</p>
+            <p className="text-foreground/60 text-lg">
+              ตรวจจับอารมณ์ของคุณแบบ Real-time
+            </p>
          </div>
          
-         {/* Status Badge */}
          <div className={`px-4 py-2 rounded-full text-sm font-medium shadow-sm transition-all ${
            isLoading ? "bg-yellow-100 text-yellow-700 border border-yellow-200" :
            isStreaming ? "bg-green-100 text-green-700 border border-green-200" :
@@ -336,51 +360,60 @@ export default function Home() {
          </div>
       </div>
 
-      {/* Main Grid Layout */}
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-8">
          
-         {/* Left: Camera Feed (Hero Section) */}
-         <div className="lg:col-span-2 w-full">
+         {/* Left: Camera Feed */}
+         <div className="lg:col-span-2 w-full flex flex-col gap-4">
             <div className="relative aspect-video bg-white rounded-3xl overflow-hidden border-4 border-white shadow-xl ring-1 ring-black/5">
                <video ref={videoRef} className="hidden" playsInline />
                <canvas
                  ref={canvasRef}
-                 className="w-full h-full object-cover transform scale-x-[-1]" // กลับด้านกระจก
+                 className="w-full h-full object-cover transform scale-x-[-1]" 
                />
                
-               {/* Overlay when not streaming */}
                {!isStreaming && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10">
-                     <p className="text-foreground/50 mb-4 font-medium">กดปุ่มด้านล่างเพื่อเริ่มใช้งาน</p>
-                     <button 
-                       onClick={startCamera}
-                       disabled={isLoading}
-                       className="px-8 py-3 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:opacity-90 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                     >
-                        {isLoading ? "กำลังโหลดระบบ..." : "📷 เปิดกล้อง"}
-                     </button>
+                     <p className="text-foreground/50 mb-4 font-medium text-lg">กดปุ่มเริ่มด้านล่างเพื่อใช้งาน</p>
+                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-3xl animate-bounce">
+                        📷
+                     </div>
                   </div>
                )}
+            </div>
+
+            {/* ปุ่มควบคุม (Control Buttons) - ตรงนี้ครับที่เพิ่มสีสัน */}
+            <div className="flex gap-4 justify-center md:justify-start">
+                {!isStreaming ? (
+                    <button 
+                        onClick={startCamera}
+                        disabled={isLoading}
+                        className="flex-1 md:flex-none px-8 py-3 rounded-2xl bg-[#4ade80] text-white font-bold text-lg shadow-[0_4px_0_#22c55e] active:shadow-none active:translate-y-[4px] hover:bg-[#22c55e] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                        <span>▶</span> เริ่มกล้อง (Start)
+                    </button>
+                ) : (
+                    <button 
+                        onClick={stopCamera}
+                        className="flex-1 md:flex-none px-8 py-3 rounded-2xl bg-[#fb7185] text-white font-bold text-lg shadow-[0_4px_0_#e11d48] active:shadow-none active:translate-y-[4px] hover:bg-[#e11d48] transition-all flex items-center justify-center gap-2"
+                    >
+                        <span>⏹</span> หยุดกล้อง (Stop)
+                    </button>
+                )}
             </div>
          </div>
 
          {/* Right: Dashboard Panel */}
          <div className="w-full flex flex-col gap-4">
             
-            {/* Emotion Card */}
-            <div className="flex-1 bg-white/60 backdrop-blur-md border border-white/50 rounded-3xl p-6 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden">
-               
+            <div className="flex-1 bg-white/60 backdrop-blur-md border border-white/50 rounded-3xl p-6 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden min-h-[300px]">
                <h3 className="text-foreground/50 text-xs uppercase tracking-widest mb-4 font-bold">Detected Emotion</h3>
-               
-               {/* แสดงอารมณ์ตัวใหญ่ๆ */}
-               <div className="text-5xl md:text-6xl font-black text-primary py-4 drop-shadow-sm">
+               <div className="text-5xl md:text-6xl font-black text-primary py-4 drop-shadow-sm animate-pulse">
                   {emotion === "-" ? "..." : emotion}
                </div>
                
-               {/* Confidence Bar */}
                <div className="w-full mt-8 px-4">
                   <div className="flex justify-between text-xs text-foreground/50 mb-2 font-medium">
-                     <span>ความมั่นใจ (Confidence)</span>
+                     <span>ความมั่นใจ</span>
                      <span>{(conf * 100).toFixed(0)}%</span>
                   </div>
                   <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden border border-gray-200/50">
@@ -392,17 +425,14 @@ export default function Home() {
                </div>
             </div>
 
-            {/* Instruction / Info */}
             <div className="bg-white/40 border border-white/60 rounded-2xl p-5 text-xs text-foreground/60 leading-relaxed shadow-sm">
                <p className="flex items-start gap-2">
                  <span>🔒</span>
-                 <span>ระบบทำงานบน Browser ของคุณ 100% ข้อมูลภาพจะไม่ถูกส่งไปยัง Server ภายนอก ปลอดภัยหายห่วง</span>
+                 <span>ระบบทำงานบน Browser ของคุณ 100% ปลอดภัยหายห่วง</span>
                </p>
             </div>
-
          </div>
       </div>
-
     </main>
   );
 }
