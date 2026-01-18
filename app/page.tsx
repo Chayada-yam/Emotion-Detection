@@ -64,7 +64,6 @@
 //   );
 // }
 
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -88,10 +87,10 @@ export default function Home() {
   const faceCascadeRef = useRef<any>(null);
   const sessionRef = useRef<ort.InferenceSession | null>(null);
   const classesRef = useRef<string[] | null>(null);
-  const animationIdRef = useRef<number | null>(null); // เพิ่มตัวนี้เพื่อใช้ยกเลิก loop
+  const animationIdRef = useRef<number | null>(null);
 
   // --- LOGIC SECTION ---
-
+  // (ส่วนโหลด AI เหมือนเดิม)
   async function loadOpenCV() {
     if (typeof window === "undefined") return;
     if ((window as any).cv?.Mat) {
@@ -147,7 +146,6 @@ export default function Home() {
     classesRef.current = await clsRes.json();
   }
 
-  // ฟังก์ชันเริ่มกล้อง
   async function startCamera() {
     setStatus("กำลังขออนุญาตใช้กล้อง...");
     try {
@@ -160,8 +158,6 @@ export default function Home() {
       await videoRef.current.play();
       setStatus("กำลังทำงาน (Running)");
       setIsStreaming(true);
-      
-      // เริ่ม Loop
       loop();
     } catch (err) {
       setStatus("ไม่สามารถเปิดกล้องได้");
@@ -169,24 +165,19 @@ export default function Home() {
     }
   }
 
-  // ฟังก์ชันหยุดกล้อง (เพิ่มใหม่)
   function stopCamera() {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
-    
     if (animationIdRef.current) {
       cancelAnimationFrame(animationIdRef.current);
     }
-
     setIsStreaming(false);
     setStatus("หยุดทำงานแล้ว (Stopped)");
     setEmotion("-");
     setConf(0);
-    
-    // เคลียร์ภาพค้างที่ Canvas
     const canvas = canvasRef.current;
     if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -232,7 +223,6 @@ export default function Home() {
       const video = videoRef.current;
       const canvas = canvasRef.current;
 
-      // ถ้าหยุด stream หรือ video หยุดเล่น ให้จบ loop
       if (!cv || !faceCascade || !session || !classes || !video || !canvas || video.paused || video.ended) {
          return; 
       }
@@ -263,6 +253,7 @@ export default function Home() {
           bestArea = area;
           bestRect = r;
         }
+        // วาดกรอบจางๆ
         ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; 
         ctx.lineWidth = 2;
         ctx.strokeRect(r.x, r.y, r.width, r.height);
@@ -294,6 +285,7 @@ export default function Home() {
         setEmotion(detectedEmotion);
         setConf(confidence);
 
+        // วาด UI บนหน้า
         ctx.strokeStyle = "#ffffff"; 
         ctx.lineWidth = 4;
         ctx.strokeRect(bestRect.x, bestRect.y, bestRect.width, bestRect.height);
@@ -331,7 +323,6 @@ export default function Home() {
         setStatus(`Error: ${e?.message}`);
       }
     })();
-    // Cleanup เมื่อปิดหน้าเว็บ
     return () => stopCamera();
   }, []);
 
@@ -339,15 +330,12 @@ export default function Home() {
   return (
     <main className="min-h-screen w-full bg-background text-foreground flex flex-col items-center justify-center p-4 md:p-8 font-sans transition-colors duration-300">
       
-      {/* Header */}
+      {/* Header (ลบข้อความที่ไม่ต้องการออกแล้ว) */}
       <div className="w-full max-w-5xl mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
          <div className="text-center md:text-left">
             <h1 className="text-4xl md:text-6xl font-black mb-2 bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm">
               Face Emotion AI
             </h1>
-            <p className="text-foreground/60 text-lg">
-              ตรวจจับอารมณ์ของคุณแบบ Real-time
-            </p>
          </div>
          
          <div className={`px-4 py-2 rounded-full text-sm font-medium shadow-sm transition-all ${
@@ -362,10 +350,13 @@ export default function Home() {
 
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-8">
          
-         {/* Left: Camera Feed */}
+         {/* Camera Section */}
          <div className="lg:col-span-2 w-full flex flex-col gap-4">
             <div className="relative aspect-video bg-white rounded-3xl overflow-hidden border-4 border-white shadow-xl ring-1 ring-black/5">
-               <video ref={videoRef} className="hidden" playsInline />
+               
+               {/* 🔥 บังคับซ่อนกล้องตัวต้นฉบับด้วย style={{ display: 'none' }} */}
+               <video ref={videoRef} className="hidden" style={{ display: 'none' }} playsInline />
+               
                <canvas
                  ref={canvasRef}
                  className="w-full h-full object-cover transform scale-x-[-1]" 
@@ -381,7 +372,7 @@ export default function Home() {
                )}
             </div>
 
-            {/* ปุ่มควบคุม (Control Buttons) - ตรงนี้ครับที่เพิ่มสีสัน */}
+            {/* Control Buttons */}
             <div className="flex gap-4 justify-center md:justify-start">
                 {!isStreaming ? (
                     <button 
@@ -402,9 +393,8 @@ export default function Home() {
             </div>
          </div>
 
-         {/* Right: Dashboard Panel */}
+         {/* Dashboard Panel */}
          <div className="w-full flex flex-col gap-4">
-            
             <div className="flex-1 bg-white/60 backdrop-blur-md border border-white/50 rounded-3xl p-6 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden min-h-[300px]">
                <h3 className="text-foreground/50 text-xs uppercase tracking-widest mb-4 font-bold">Detected Emotion</h3>
                <div className="text-5xl md:text-6xl font-black text-primary py-4 drop-shadow-sm animate-pulse">

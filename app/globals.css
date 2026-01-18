@@ -4,23 +4,22 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
-  
-  /* 🔥 บรรทัดสำคัญ: เชื่อมฟอนต์ Mali จาก layout.tsx */
+  /* 🔥 ต้องเชื่อมฟอนต์ตรงนี้ให้ตรงกับ layout.tsx */
   --font-sans: var(--font-main); 
 }
 
-/* ธีมสีพาสเทล (Pastel Theme) */
+/* ธีมพาสเทล */
 :root {
-  --background: #fdfbf7; /* ครีมอุ่น */
-  --foreground: #334155; /* เทาเข้ม */
-  --primary: #9333ea;    /* ม่วงลาเวนเดอร์ */
+  --background: #fdfbf7; /* สีครีม */
+  --foreground: #334155; /* สีเทาเข้ม */
+  --primary: #9333ea;    /* สีม่วง */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0f0720; /* ม่วงมืด */
-    --foreground: #f3e8ff; /* ขาวอมม่วง */
-    --primary: #d8b4fe;    /* ม่วงนีออน */
+    --background: #0f0720;
+    --foreground: #f3e8ff;
+    --primary: #d8b4fe;
   }
 }
 
